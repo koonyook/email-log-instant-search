@@ -1,0 +1,3 @@
+#!/bin/bash
+
+curl ?.?.?.?:9200/_aliases?pretty

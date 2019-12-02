@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+#
+# irond         This shell script takes care of starting and stopping
+#               the IronPort log gathering Daemon (irond).
+#
+# chkconfig: 345 99 01
+# description:  This daemon gather ironport log and put to elasticsearch
+#		
+# processname: irond
+# pidfile: /var/run/irond.pid
+
+import sys, time
+
+#print sys.path
+
+sys.path.append("/opt/irond/lib")
+import setting
+
+from myDaemon import irond
+
+if __name__ == "__main__":
+	#print "hello"
+	#print sys.argv
+	if len(sys.argv) >=2:
+		if sys.argv[-1]=='debug':
+			isDebugMode=True
+		else:
+			isDebugMode=False
+
+		logFile=setting.LOG_PATH+'irond.log'
+
+		d = irond('/var/run/irond.pid','irond',stdout=logFile,stderr=logFile,isDebugMode=isDebugMode)
+		
+		if 'start' == sys.argv[1]:
+			d.start()
+		elif 'stop' == sys.argv[1]:
+			d.stop()
+		elif 'restart' == sys.argv[1]:
+			d.stop()
+			d.start()
+		elif 'status' == sys.argv[1]:
+			d.status()
+		elif 'clearlog' == sys.argv[1]:
+			open(logFile,'w').close()
+		else:
+			print "Unknown command"
+			sys.exit(2)
+		sys.exit(0)
+	else:
+		print "usage: irond {start|stop|restart|status|clearlog} [debug]"
+		sys.exit(2)

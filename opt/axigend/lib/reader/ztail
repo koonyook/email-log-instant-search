@@ -1,0 +1,49 @@
+#!/usr/bin/python -u
+
+import datetime,time,os,os.path,string,thread
+import sys
+from gzip import GzipFile
+
+base = '/exports/'
+vlock = thread.allocate_lock()
+
+def printlog(machine,dateRange):
+	for iDate in dateRange:
+		filepath=base+machine+'/'+string.replace(iDate,'-','/')+'.gz'
+		fp=GzipFile(filepath,'r')
+	
+		rest=""
+		while True:
+			#last = where
+			#where = fp.tell()
+			#print "last = " + str(last) +" where = "+str(where)
+			line = fp.read(10000)
+			if not line:	#read to the End of File
+				securePrint(rest)
+				rest=""
+				break
+			else:
+				splitResult=(rest+line).rsplit('\n',1)
+				if len(splitResult)==2:
+					line,rest=splitResult
+					securePrint(line)	
+				else:
+					#no newline nothing to print
+					rest=splitResult[0]
+		fp.close()
+	
+def securePrint(text):
+	vlock.acquire()
+	print string.strip(text)
+	sys.stdout.flush()
+	vlock.release()
+
+
+from util import generateDateRange
+
+if __name__ == '__main__' :
+	#only 1 thread and no infinite loop
+	if len(sys.argv)==3:
+		printlog(sys.argv[1],[sys.argv[2]])
+	elif len(sys.argv)==4:
+		printlog(sys.argv[1],generateDateRange(sys.argv[2],sys.argv[3]))

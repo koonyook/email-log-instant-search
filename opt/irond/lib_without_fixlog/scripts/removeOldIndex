@@ -1,0 +1,32 @@
+#!/usr/bin/python
+import sys,os
+libPath=os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(libPath)
+import setting
+
+import elasticsearch
+import json
+import datetime,time
+from datetime import datetime,timedelta
+
+connection = setting.ES_CONNECTION
+
+keepPeriod = setting.KEEP_PERIOD #days
+
+
+if __name__ == "__main__":
+	
+	es = elasticsearch.Elasticsearch(connection)
+	client=elasticsearch.client.IndicesClient(es)
+	allIndex=client.get_aliases()
+	for indexName in allIndex:
+		tmp=indexName.split('-')
+		if len(tmp)>=4:
+			date='-'.join(tmp[0:3])
+			dt=datetime.strptime(date, '%Y-%m-%d')
+			if (datetime.today()-dt) > timedelta(days=keepPeriod):
+				print indexName
+				result=client.delete(index=indexName)
+				print result
+
+	

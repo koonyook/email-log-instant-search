@@ -1,0 +1,57 @@
+#!/usr/bin/python
+#usage
+#python p01.py axigen
+#standard input
+#ThreadName jsonQuery
+#example for 1 line
+#qwerty {"action": "new", "indexName": "2013-11-04-axigen", "type": "loginout", "value": {"hostname": "axmail1", "service":"POP3", "ConnectionID": "54F4E4", "ip": "183.89.60.153", "timestamp": "2013-11-04T00:00:00"}}
+
+import sys,os
+libPath=os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(libPath)
+import setting
+from util.general import generateDateRange
+
+import threading
+import Queue
+
+import memcache
+import elasticsearch
+import json
+import datetime,time
+
+connection = setting.ES_CONNECTION
+
+def deleteIndex(indexName):
+	#indexName='2012-12-31' (for example)
+	es = elasticsearch.Elasticsearch(connection)
+	client=elasticsearch.client.IndicesClient(es)
+	
+	result=client.delete(index=indexName)
+
+	return result
+
+
+	
+if __name__ == "__main__":
+
+	#print deleteIndex("2013-11-21-axigen")
+	#print createNewIndex('2013-11-21-axigen')
+	
+	#print deleteIndex("2013-11-05")
+	#print createNewIndex('2013-11-05')
+
+	if len(sys.argv)==2:
+		print sys.argv[1]
+		print deleteIndex(sys.argv[1])
+	elif len(sys.argv)==3:
+		print "deleting from",sys.argv[1],"to",sys.argv[2]
+		toDate='-'.join(sys.argv[2].split('-')[:3])
+		for iDate in generateDateRange(fromDate,toDate):
+			indexName=iDate+'-ironport'
+			print deleteIndex(indexName)
+
+
+
+
+	

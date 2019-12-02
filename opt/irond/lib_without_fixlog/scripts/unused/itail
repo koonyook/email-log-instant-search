@@ -1,0 +1,101 @@
+#!/usr/bin/python -u
+import datetime,time,os,os.path,string,thread
+import sys
+
+#startDate=datetime.date(2013, 12, 1)
+#dateOffset=-1
+
+base = '/exports/'
+vlock = thread.allocate_lock()
+
+def printlog(machine="PRINTLOG Unknow"):
+	
+	# machine ip 10.20.4.111
+	#today = str(datetime.date.today())
+	#today = '2008-11-14' 
+  
+	#loop until the the current file exist
+	filepath=""
+	fp=None
+	while fp is None:
+		filepath = changefile(machine)
+		if os.path.exists(filepath):
+			fp = open(filepath,'r')
+			st_results = os.stat(filepath)
+			where = st_results[6]
+			fp.seek(where)	#no seeking in testing envitonment
+		time.sleep(5)
+	
+	rest=""
+	while True:
+		#last = where
+		#where = fp.tell()
+		#print "last = " + str(last) +" where = "+str(where)
+		line = fp.read()
+		if not line:	#read to the End of File
+			#check whether the new day have already start
+			
+			#if True: #for testing only 
+			if filepath != changefile(machine):
+				#perform last read and clear the rest
+				time.sleep(10)	#give some time for the last set of log in that day
+				rest+=fp.read()
+				securePrint(rest)
+				rest=""
+				fp.close()
+				
+				#loop until the new file is ready
+				while True:
+					fileToCheck=changefile(machine)
+					if os.path.exists(fileToCheck):
+						filepath=fileToCheck
+						fp = open(filepath,'r')
+						break
+					else:
+						time.sleep(5)
+						continue
+				
+			else:
+				#keep using old file
+				pass
+		else:
+			splitResult=(rest+line).rsplit('\n',1)
+			if len(splitResult)==2:
+				line,rest=splitResult
+				securePrint(line)	
+			else:
+				#no newline nothing to print
+				rest=splitResult[0]
+		#delay between reading
+		time.sleep(5)
+	
+	fp.close()
+	
+def securePrint(text):
+	vlock.acquire()
+	print string.strip(text)
+	sys.stdout.flush()
+	vlock.release()
+
+def changefile(machine):
+	#for normal operation
+	return base+machine+'/'+string.replace(str(datetime.date.today()),'-','/')
+
+	#for testing without realtime data condition
+	#global dateOffset
+	#dateOffset+=1
+	#if startDate+datetime.timedelta(days=dateOffset) > datetime.date.today():
+	#	print "end of data"
+	#	sys.exit()
+	#return base+machine+'/'+string.replace(str(startDate+datetime.timedelta(days=dateOffset)),'-','/')
+
+if __name__ == '__main__' :
+	#for normal operation
+	for i in sys.argv[1:]:
+		thread.start_new_thread(printlog,(i,))
+		time.sleep(5)
+	while 1: pass
+	
+	#for testing
+	#printlog(sys.argv[1])
+

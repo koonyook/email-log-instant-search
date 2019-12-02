@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+#
+# axigend       This shell script takes care of starting and stopping
+#               the Axigen log gathering Daemon (axigend).
+#
+# chkconfig: 345 99 01
+# description:  This daemon gather axigen log and put to elasticsearch
+#		
+# processname: axigend
+# pidfile: /var/run/axigend.pid
+
+import sys, time
+
+#print sys.path
+
+sys.path.append("/opt/axigend/lib")
+import setting
+
+from myDaemon import axigend
+
+if __name__ == "__main__":
+	#print "hello"
+	#print sys.argv
+	if len(sys.argv) >=2:
+		if sys.argv[-1]=='debug':
+			isDebugMode=True
+		else:
+			isDebugMode=False
+
+		logFile=setting.LOG_PATH+'axigend.log'
+
+		d = axigend('/var/run/axigend.pid','axigend',stdout=logFile,stderr=logFile,isDebugMode=isDebugMode)
+		
+		if 'start' == sys.argv[1]:
+			d.start()
+		elif 'stop' == sys.argv[1]:
+			d.stop()
+		elif 'restart' == sys.argv[1]:
+			d.stop()
+			d.start()
+		elif 'status' == sys.argv[1]:
+			d.status()
+		elif 'clearlog' == sys.argv[1]:
+			open(logFile,'w').close()
+		else:
+			print "Unknown command"
+			sys.exit(2)
+		sys.exit(0)
+	else:
+		print "usage: axigend {start|stop|restart|status|clearlog} [debug]"
+		sys.exit(2)

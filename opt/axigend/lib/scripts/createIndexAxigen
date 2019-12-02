@@ -1,0 +1,211 @@
+#!/usr/bin/python
+#usage
+#python p01.py axigen
+#standard input
+#ThreadName jsonQuery
+#example for 1 line
+#qwerty {"action": "new", "indexName": "2013-11-04-axigen", "type": "loginout", "value": {"hostname": "axmail1", "service":"POP3", "ConnectionID": "54F4E4", "ip": "183.89.60.153", "timestamp": "2013-11-04T00:00:00"}}
+import sys,os
+libPath=os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(libPath)
+import setting
+from util.general import generateDateRange
+
+import threading
+import Queue
+
+import memcache
+import elasticsearch
+import json
+import datetime,time
+
+connection = setting.ES_CONNECTION
+
+def createNewIndex(indexName):
+	#indexName='2012-12-31' (for example)
+	es = elasticsearch.Elasticsearch(connection)
+	client=elasticsearch.client.IndicesClient(es)
+	try:
+		result=client.create(index=indexName,body={
+		"settings" : {
+			"refresh_interval":1
+		},
+		"mappings" : {
+			"message": {
+				"properties": {
+					"timestamp": {
+						"type":"date",
+						"index":"not_analyzed"
+					},
+					"hostname": {
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"ICID":{
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"MID":{
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"DCID":{
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"from": {
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"to": {
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"subject": {
+						"type":"string",
+						"index":"analyzed"
+					},
+					"spam": {
+						"type":"boolean",
+						"index":"no"
+					},
+					"virus": {
+						"type":"boolean",
+						"index":"no"
+					},
+					"finished": {
+						"type":"boolean",
+						"index":"no"
+					},
+					"ip": {
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"interface": {
+						"type":"string",
+						"index":"no"
+					},
+					"mx_name": {
+						"type":"string",
+						"index":"no"
+					},
+					"accepted": {
+						"type":"string",
+						"index":"no"
+					},
+					"size": {
+						"type":"integer",
+						"index":"not_analyzed"
+					},
+					"MSGID": {
+						"type":"string",
+						"index":"not_analyzed"
+					}
+				}
+			},
+		
+
+			"loginout": {
+				"properties": {
+					"timestamp": {
+						"type":"date",
+						"index":"not_analyzed"
+					},
+					"hostname": {
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"ConnectionID":{
+						"type":"string",
+						"index":"not_analyzed"
+					},
+
+					"service": {
+						"type":"string",
+						"index":"no"
+					},
+					"action": {
+						"type":"string",
+						"index":"no"
+					},
+					"ip": {
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"user": {
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"security": {
+						"type":"string",
+						"index":"no"
+					},
+					"stat": {
+						"type":"string",
+						"index":"no"
+					}
+				}
+			},
+			
+			"deleted": {
+				"properties": {
+					"timestamp": {
+						"type":"date",
+						"index":"not_analyzed"
+					},
+					"hostname": {
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"ConnectionID":{
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"email":{
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"messageid": {
+						"type":"string",
+						"index":"not_analyzed"
+					},
+					"subject": {
+						"type":"string",
+						"index":"analyzed"
+					},
+					"delip": {
+						"type":"string",
+						"index":"not_analyzed"
+					}
+				}
+			}
+		}
+		})
+	except:
+		return "create error",indexName
+	
+	return result
+
+
+if __name__ == "__main__":
+
+	#print deleteIndex("2013-11-21-axigen")
+	#print createNewIndex('2013-11-21-axigen')
+	if len(sys.argv)==2:
+		print "creating",sys.argv[1]
+		print createNewIndex(sys.argv[1])
+	elif len(sys.argv)==3:
+		print "creating from",sys.argv[1],"to",sys.argv[2]
+		fromDate='-'.join(sys.argv[1].split('-')[:3])
+		toDate='-'.join(sys.argv[2].split('-')[:3])
+		for iDate in generateDateRange(fromDate,toDate):
+			indexName=iDate+'-axigen'
+			print createNewIndex(indexName)
+
+	print "finish"
+
+	#print deleteIndex("2013-11-05")
+	#print createNewIndex('2013-11-05')
+
+
+	
